@@ -11,25 +11,28 @@ class RedisCachePlugin extends Plugin
 {
     const VERSION = '0.0.1';
 
-    private $client;
+    private $client = null;
+    public $defaultExpiry = 86400; // 24h
 
     function onInitializePlugin()
     {
-        $connection = common_config('rediscache', 'connection');
-
-        Predis\Autoloader::register();
-        $this->client = new Predis\Client($connection);
+        $this->_ensureConn();
 
         return true;
     }
 
+    private function _ensureConn()
+    {
+        if ($this->client === null) {
+            $connection = common_config('rediscache', 'connection');
+
+            $this->client = new Predis\Client($connection);
+        }
+    }
+
     function onStartCacheGet(&$key, &$value)
     {
-        // Apparently we can catch this event before `initialize()` is called
-        // so check if we have a client yet and return early if we don't
-        if ($this->client === null) {
-            return true;
-        }
+        $this->_ensureConn();
 
         $ret = $this->client->get($key);
 
@@ -49,10 +52,10 @@ class RedisCachePlugin extends Plugin
     // TODO: look into flag and expiry values we get from GS
     function onStartCacheSet(&$key, &$value, &$flag, &$expiry, &$success)
     {
-        // Apparently we can catch this event before `initialize()` is called
-        // so check if we have a client yet and return early if we don't
-        if ($this->client === null) {
-            return true;
+        $this->_ensureConn();
+
+        if ($expiry === null) {
+            $expiry = $this->defaultExpiry;
         }
 
         $ret = $this->client->set($key, serialize($value));
@@ -70,9 +73,7 @@ class RedisCachePlugin extends Plugin
 
     function onStartCacheDelete($key)
     {
-        if ($this->client === null) {
-            return true;
-        }
+        $this->_ensureConn();
 
         $this->client->del($key);
 
@@ -84,9 +85,7 @@ class RedisCachePlugin extends Plugin
 
     function onStartCacheIncrement(&$key, &$step, &$value)
     {
-        if ($this->client === null) {
-            return true;
-        }
+        $this->_ensureConn();
 
         // TODO: handle when this fails
         $this->client->incrby($key, $step);
