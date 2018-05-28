@@ -13,8 +13,7 @@ class RedisCachePlugin extends Plugin
 
     private $client;
 
-
-    function initialize()
+    function onInitializePlugin()
     {
         $connection = common_config('rediscache', 'connection');
 
@@ -39,6 +38,7 @@ class RedisCachePlugin extends Plugin
         if ($ret !== null) {
             $value = unserialize($ret);
 
+            Event::handle('EndCacheGet', array($key, &$value));
             return false;
         }
 
@@ -46,6 +46,7 @@ class RedisCachePlugin extends Plugin
         return true;
     }
 
+    // TODO: look into flag and expiry values we get from GS
     function onStartCacheSet(&$key, &$value, &$flag, &$expiry, &$success)
     {
         // Apparently we can catch this event before `initialize()` is called
@@ -58,10 +59,41 @@ class RedisCachePlugin extends Plugin
 
         if ($ret->getPayload() === "OK") {
             $success = true;
+
+            Event::handle('EndCacheSet', array($key, $value, $flag, $expiry));
+
             return false;
         }
 
         return true;
+    }
+
+    function onStartCacheDelete($key)
+    {
+        if ($this->client === null) {
+            return true;
+        }
+
+        $this->client->del($key);
+
+        Event::handle('EndCacheDelete', array($key));
+
+        // Let other Caches delete stuff if they want to
+        return true;
+    }
+
+    function onStartCacheIncrement(&$key, &$step, &$value)
+    {
+        if ($this->client === null) {
+            return true;
+        }
+
+        // TODO: handle when this fails
+        $this->client->incrby($key, $step);
+
+        Event::handle('EndCacheIncrement', array($key, $step, $value));
+
+        return false;
     }
 
     function onPluginVersion(array &$versions)
