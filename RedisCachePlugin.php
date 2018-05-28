@@ -49,7 +49,6 @@ class RedisCachePlugin extends Plugin
         return true;
     }
 
-    // TODO: look into flag and expiry values we get from GS
     function onStartCacheSet(&$key, &$value, &$flag, &$expiry, &$success)
     {
         $this->_ensureConn();
@@ -58,7 +57,7 @@ class RedisCachePlugin extends Plugin
             $expiry = $this->defaultExpiry;
         }
 
-        $ret = $this->client->set($key, serialize($value));
+        $ret = $this->client->setex($key, $expiry, serialize($value));
 
         if ($ret->getPayload() === "OK") {
             $success = true;
