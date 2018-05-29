@@ -32,9 +32,15 @@ class RedisCachePlugin extends Plugin
 
     function onStartCacheGet(&$key, &$value)
     {
-        $this->_ensureConn();
+        try {
+            $this->_ensureConn();
 
-        $ret = $this->client->get($key);
+            $ret = $this->client->get($key);
+        } catch(\Predis\PredisException $Ex) {
+            common_log(LOG_ERR, get_class($Ex) . ' ' . $Ex->getMessage());
+
+            return true;
+        }
 
         // Hit, overwrite "value" and return false
         // to indicate we took care of this
@@ -51,13 +57,19 @@ class RedisCachePlugin extends Plugin
 
     function onStartCacheSet(&$key, &$value, &$flag, &$expiry, &$success)
     {
-        $this->_ensureConn();
-
         if ($expiry === null) {
             $expiry = $this->defaultExpiry;
         }
 
-        $ret = $this->client->setex($key, $expiry, serialize($value));
+        try {
+            $this->_ensureConn();
+
+            $ret = $this->client->setex($key, $expiry, serialize($value));
+        } catch(\Predis\PredisException $Ex) {
+            common_log(LOG_ERR, get_class($Ex) . ' ' . $Ex->getMessage());
+
+            return true;
+        }
 
         if ($ret->getPayload() === "OK") {
             $success = true;
@@ -72,11 +84,13 @@ class RedisCachePlugin extends Plugin
 
     function onStartCacheDelete($key)
     {
-        $this->_ensureConn();
+        try {
+            $this->_ensureConn();
 
-        $this->client->del($key);
-
-        Event::handle('EndCacheDelete', array($key));
+            $this->client->del($key);
+        } catch(\Predis\PredisException $Ex) {
+            common_log(LOG_ERR, get_class($Ex) . ' ' . $Ex->getMessage());
+        }
 
         // Let other Caches delete stuff if they want to
         return true;
@@ -84,10 +98,16 @@ class RedisCachePlugin extends Plugin
 
     function onStartCacheIncrement(&$key, &$step, &$value)
     {
-        $this->_ensureConn();
+        try {
+            $this->_ensureConn();
 
-        // TODO: handle when this fails
-        $this->client->incrby($key, $step);
+            // TODO: handle when this fails
+            $this->client->incrby($key, $step);
+        } catch(\Predis\PredisException $Ex) {
+            common_log(LOG_ERR, get_class($Ex) . ' ' . $Ex->getMessage());
+
+            return true;
+        }
 
         Event::handle('EndCacheIncrement', array($key, $step, $value));
 
