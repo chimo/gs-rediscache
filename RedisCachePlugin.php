@@ -34,7 +34,7 @@ class RedisCachePlugin extends Plugin
     {
         // Temporary work-around upstream bug
         // see: https://github.com/chimo/gs-rediscache/issues/1
-        if ($key === 'profileall') {
+        if ($key === Cache::key('profileall')) {
             return true;
         }
 
@@ -65,7 +65,7 @@ class RedisCachePlugin extends Plugin
     {
         // Temporary work-around upstream bug
         // see: https://github.com/chimo/gs-rediscache/issues/1
-        if ($key === 'profileall') {
+        if ($key === Cache::key('profileall')) {
             return true;
         }
 
