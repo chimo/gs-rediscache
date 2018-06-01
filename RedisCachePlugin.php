@@ -32,6 +32,12 @@ class RedisCachePlugin extends Plugin
 
     function onStartCacheGet(&$key, &$value)
     {
+        // Temporary work-around upstream bug
+        // see: https://github.com/chimo/gs-rediscache/issues/1
+        if ($key === 'profileall') {
+            return true;
+        }
+
         try {
             $this->_ensureConn();
 
@@ -57,6 +63,12 @@ class RedisCachePlugin extends Plugin
 
     function onStartCacheSet(&$key, &$value, &$flag, &$expiry, &$success)
     {
+        // Temporary work-around upstream bug
+        // see: https://github.com/chimo/gs-rediscache/issues/1
+        if ($key === 'profileall') {
+            return true;
+        }
+
         if ($expiry === null) {
             $expiry = $this->defaultExpiry;
         }
