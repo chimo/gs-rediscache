@@ -17,3 +17,10 @@ Tell `/config.php` to use it with (replace `127.0.0.1:6379` with the address/por
     addPlugin('RedisCache');
 ```
 
+You can also use a unix socket instead of a tcp connection:
+
+```
+    $config['rediscache']['connection'] = [ 'unix:/var/run/redis/redis.sock' ];
+    addPlugin('RedisCache');
+```
+
