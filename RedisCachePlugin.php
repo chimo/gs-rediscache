@@ -5,7 +5,7 @@ if (!defined('GNUSOCIAL')) {
 }
 
 // composer
-require 'vendor/autoload.php';
+require(__DIR__ . '/vendor/autoload.php');
 
 class RedisCachePlugin extends Plugin
 {
